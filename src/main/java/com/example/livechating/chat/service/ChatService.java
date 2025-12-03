@@ -5,7 +5,7 @@ import com.example.livechating.chat.domain.ChatMessage;
 import com.example.livechating.chat.domain.ChatParticipant;
 import com.example.livechating.chat.domain.ChatRoom;
 import com.example.livechating.chat.domain.ReadStatus;
-import com.example.livechating.chat.dto.ChatMessageReqDto;
+import com.example.livechating.chat.dto.ChatMessageDto;
 import com.example.livechating.chat.dto.ChatRoomListResDto;
 import com.example.livechating.chat.repository.ChatMessageRepository;
 import com.example.livechating.chat.repository.ChatParticipantRepositorty;
@@ -16,6 +16,7 @@ import com.example.livechating.member.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j(topic = "ChatService")
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -38,18 +40,18 @@ public class ChatService {
 
     private final MemberRepository memberRepository;
 
-    public void saveMessage(Long roomId, ChatMessageReqDto chatMessageReqDto) {
+    public void saveMessage(Long roomId, ChatMessageDto chatMessageDto) {
         //      채팅방 조회
         ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(
                 () -> new EntityNotFoundException("해당 room 이 없습니다."));
         //      보낸 사람 조회
-        Member sender = memberRepository.findByEmail(chatMessageReqDto.getSenderEmail()).orElseThrow(
+        Member sender = memberRepository.findByEmail(chatMessageDto.getSenderEmail()).orElseThrow(
                 () -> new EntityNotFoundException("해당 member 이 없습니다."));
         //      메세지 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .member(sender)  //누가 보낸 메세지인지
-                .content(chatMessageReqDto.getMessage())
+                .content(chatMessageDto.getMessage())
                 .build();
         chatMessageRepository.save(chatMessage);
         //      사용자별로 읽음 여부 저장
@@ -71,6 +73,7 @@ public class ChatService {
     public void createGroupRoom(String chatRoomName) {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName(); //@AuthenticationPricipal 이랑 같은것
+        log.info("email :{}", email);
         Member member = memberRepository.findByEmail(email).orElseThrow(
                 () -> new EntityNotFoundException("Member 를 찾을수 없습니다"));
 
@@ -129,5 +132,39 @@ public class ChatService {
                 .member(member)
                 .build();
         chatParticipantRepository.save(chatParticipant);
+    }
+
+    public List<ChatMessageDto> getChatHistory(Long roomId) {
+        //      내가 해당 채팅방의 참여자가 아닐 경우 에러  A,B 참여중인 단톡방에 C 의 요청이 들어오면 안됨
+        //      해당 단톡방의 chatParticipant 확인하기
+        String email = SecurityContextHolder.getContext().getAuthentication().getName(); //@AuthenticationPricipal 이랑 같은것
+        log.info("email :{}", email);
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException("Member 를 찾을수 없습니다"));
+
+        Member member = memberRepository.findByEmail(email).orElseThrow(
+                () -> new EntityNotFoundException("Member 를 찾을수 없습니다"));
+
+        List<ChatParticipant> chatParticipants = chatRoom.getChatParticipants();
+        boolean check = false;
+        for(ChatParticipant c : chatParticipants) {
+            if(c.getMember().equals(member)) {
+                check = true;
+            }
+        }
+        if(!check) {
+            throw new IllegalArgumentException("본인이 속하지 않는 채팅방 입니다.");
+        }
+        //      특정 room 에 대한 message 조회
+        List<ChatMessage> messages = chatMessageRepository.findByChatRoomOrderByCreatedTimeAsc(chatRoom);
+        List<ChatMessageDto> results = new ArrayList<>();  //반횐 해야할 리스트
+        for(ChatMessage c : messages) {
+            ChatMessageDto chatMessageDto = ChatMessageDto.builder()
+                    .message(c.getContent())
+                    .senderEmail(c.getMember().getEmail())
+                    .build();
+            results.add(chatMessageDto);
+        }
+        return results;
     }
 }

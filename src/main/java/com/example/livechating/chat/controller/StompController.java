@@ -1,6 +1,6 @@
 package com.example.livechating.chat.controller;
 
-import com.example.livechating.chat.dto.ChatMessageReqDto;
+import com.example.livechating.chat.dto.ChatMessageDto;
 import com.example.livechating.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +31,10 @@ public class StompController {
 //    방법 2. MessageMapping 어노테이션만 활용.
 
     @MessageMapping("/{roomId}")
-    public void sendMessage(@DestinationVariable Long roomId, ChatMessageReqDto chatMessageReqDto) {
+    public void sendMessage(@DestinationVariable Long roomId, ChatMessageDto chatMessageDto) {
 
-        log.info("message: {}", chatMessageReqDto.getMessage());
-        chatService.saveMessage(roomId, chatMessageReqDto);   //메세지 db 에 저장하기
-        messageTemplate.convertAndSend("/topic/"+roomId, chatMessageReqDto);  // @SendTo("/topic/{roomId}") 와 완전히 같은뜻임
+        log.info("message: {}", chatMessageDto.getMessage());
+        chatService.saveMessage(roomId, chatMessageDto);   //메세지 db 에 저장하기
+        messageTemplate.convertAndSend("/topic/"+roomId, chatMessageDto);  // @SendTo("/topic/{roomId}") 와 완전히 같은뜻임
     }
 }

@@ -1,5 +1,6 @@
 package com.example.livechating.chat.controller;
 
+import com.example.livechating.chat.dto.ChatMessageDto;
 import com.example.livechating.chat.dto.ChatRoomListResDto;
 import com.example.livechating.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +37,12 @@ public class ChatController {
         System.out.println("요청");
         chatService.addParticipantToGroupChat(roomId);
         return ResponseEntity.ok().build();
+    }
+
+    //  이전 메세지 조회
+    @GetMapping("/history/{roomId}")
+    public ResponseEntity<?> getChatHistory(@PathVariable Long roomId){
+        List<ChatMessageDto> messages = chatService.getChatHistory(roomId);
+        return new ResponseEntity<>(messages, HttpStatus.OK);
     }
 }
