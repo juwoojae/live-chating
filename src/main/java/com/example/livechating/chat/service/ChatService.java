@@ -6,20 +6,22 @@ import com.example.livechating.chat.domain.ChatParticipant;
 import com.example.livechating.chat.domain.ChatRoom;
 import com.example.livechating.chat.domain.ReadStatus;
 import com.example.livechating.chat.dto.ChatMessageReqDto;
+import com.example.livechating.chat.dto.ChatRoomListResDto;
 import com.example.livechating.chat.repository.ChatMessageRepository;
 import com.example.livechating.chat.repository.ChatParticipantRepositorty;
 import com.example.livechating.chat.repository.ChatRoomRepository;
 import com.example.livechating.chat.repository.ReadStatusRepository;
 import com.example.livechating.member.domain.Member;
 import com.example.livechating.member.repository.MemberRepository;
-import jakarta.persistence.Cache;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -28,7 +30,7 @@ public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
 
-    private final ChatParticipantRepositorty  chatParticipantRepositorty;
+    private final ChatParticipantRepositorty  chatParticipantRepository;
 
     private final ChatMessageRepository chatMessageRepository;
 
@@ -51,7 +53,7 @@ public class ChatService {
                 .build();
         chatMessageRepository.save(chatMessage);
         //      사용자별로 읽음 여부 저장
-        List<ChatParticipant> chatParticipants = chatParticipantRepositorty.findByChatRoom(chatRoom);
+        List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
         for(ChatParticipant c : chatParticipants) {
             ReadStatus readStatus = ReadStatus.builder()
                     .member(c.getMember())
@@ -83,6 +85,49 @@ public class ChatService {
                 .chatRoom(chatRoom)
                 .member(member)
                 .build();
-        chatParticipantRepositorty.save(chatParticipant);
+        chatParticipantRepository.save(chatParticipant);
+    }
+
+    public List<ChatRoomListResDto> getGroupchatRooms() {
+
+        List<ChatRoom> chatRooms = chatRoomRepository.findByIsGroupChat("Y");
+        List<ChatRoomListResDto> results = new ArrayList<>();
+        for(ChatRoom c : chatRooms) {
+              ChatRoomListResDto chatRoomListResDto = ChatRoomListResDto
+                      .builder()
+                      .roomId(c.getId())
+                      .roomName(c.getName())
+                      .build();
+              results.add(chatRoomListResDto);
+        }
+        return results;
+    }
+
+    /**
+     * 그룹 채팅방 참여
+     */
+    public void addParticipantToGroupChat(Long roomId) {
+        //      채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException("room cannot be found."));
+        //      member 조회
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Member member = memberRepository.findByEmail(email).orElseThrow(
+                () -> new EntityNotFoundException("member cannot be found."));
+        //      이미 참여자인지 검증
+        Optional<ChatParticipant> participant = chatParticipantRepository.findByChatRoomAndMember(chatRoom, member);
+        if(!participant.isPresent()) {
+            addParticipantToRoom(chatRoom, member);
+        }
+
+    }
+
+    //      ChatParticipant  객체 생성후 저장
+    public void addParticipantToRoom(ChatRoom chatRoom, Member member) {
+        ChatParticipant chatParticipant = ChatParticipant.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .build();
+        chatParticipantRepository.save(chatParticipant);
     }
 }
