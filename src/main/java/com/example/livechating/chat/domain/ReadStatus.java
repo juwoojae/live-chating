@@ -30,6 +30,7 @@ public class ReadStatus extends BaseTimeEntity {
     @Column(nullable = false)
     private Boolean isRead;
 
+	// 안 읽음 상태를 읽음 상태로 바꾸는 메서드
     public void updateIsRead(boolean isRead) {
         this.isRead = isRead;
     }

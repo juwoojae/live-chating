@@ -2,6 +2,7 @@ package com.example.livechating.chat.controller;
 
 import com.example.livechating.chat.dto.ChatMessageDto;
 import com.example.livechating.chat.dto.ChatRoomListResDto;
+import com.example.livechating.chat.dto.MyChatListResDto;
 import com.example.livechating.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -45,4 +46,27 @@ public class ChatController {
         List<ChatMessageDto> messages = chatService.getChatHistory(roomId);
         return new ResponseEntity<>(messages, HttpStatus.OK);
     }
+
+	//	 채팅 메세지 읽음 처리
+	@PostMapping("/room/{roomId}/read")
+	public ResponseEntity<?> messageRead(@PathVariable Long roomId){
+		chatService.messageRead(roomId);
+		return ResponseEntity.ok().build();
+	}
+
+	//	 내 채팅방 목록 조회 : roomId  , 보여줘야할 데이터 roomName, 그룹채팅 여부, 메세지 읽음 개수
+	@GetMapping("/my/rooms")
+	public ResponseEntity<?> getMyRooms(){
+		List<MyChatListResDto> myChatListResDtos = chatService.getMyChatRooms();
+		return new ResponseEntity<>(myChatListResDtos, HttpStatus.OK);
+	}
+
+	/**
+	 * 채팅방 나가기
+	 */
+	@DeleteMapping("room/group/{roomId}/leave")
+	public ResponseEntity<?> leaveRoom(@PathVariable("roomId") Long roomId) {
+		chatService.leaveGroupChatRoom(roomId);
+		return ResponseEntity.ok().build();
+	}
 }
