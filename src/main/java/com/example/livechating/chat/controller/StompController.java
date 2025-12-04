@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Controller;
 
@@ -35,6 +34,6 @@ public class StompController {
 
         log.info("message: {}", chatMessageDto.getMessage());
         chatService.saveMessage(roomId, chatMessageDto);   //메세지 db 에 저장하기
-        messageTemplate.convertAndSend("/topic/"+roomId, chatMessageDto);  // @SendTo("/topic/{roomId}") 와 완전히 같은뜻임
+        messageTemplate.convertAndSend("/topic/" + roomId, chatMessageDto);  // @SendTo("/topic/{roomId}") 와 완전히 같은뜻임
     }
 }

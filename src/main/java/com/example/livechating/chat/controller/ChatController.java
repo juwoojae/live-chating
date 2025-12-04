@@ -5,12 +5,14 @@ import com.example.livechating.chat.dto.ChatRoomListResDto;
 import com.example.livechating.chat.dto.MyChatListResDto;
 import com.example.livechating.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j(topic = "ChatController")
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class ChatController {
     // 그룹 채팅방 개설 / 새로운 리소스 를 생성해서 서버의 상태를 변경, db 에 insert 쿼리가 나가므로 post 가 맞다
     @PostMapping("/room/group/create")
     public ResponseEntity<?> createGroupRoom(@RequestParam String roomName){
+
         chatService.createGroupRoom(roomName);
         return ResponseEntity.ok().build();
     }
@@ -28,6 +31,7 @@ public class ChatController {
     // 그룹채팅 목록 조회
     @GetMapping("/room/group/list")
     public ResponseEntity<?> getGroupRooms(){
+
         List<ChatRoomListResDto> chatRooms = chatService.getGroupchatRooms();
         return new ResponseEntity<>(chatRooms, HttpStatus.OK);
     }
@@ -35,7 +39,7 @@ public class ChatController {
     // 그룹채팅방 참여
     @PostMapping("/room/group/{roomId}/join")
     public ResponseEntity<?> joinGroupChatRoom(@PathVariable Long roomId){
-        System.out.println("요청");
+
         chatService.addParticipantToGroupChat(roomId);
         return ResponseEntity.ok().build();
     }
@@ -43,6 +47,8 @@ public class ChatController {
     //  이전 메세지 조회
     @GetMapping("/history/{roomId}")
     public ResponseEntity<?> getChatHistory(@PathVariable Long roomId){
+
+        log.info("/history/{roomId} 엔드포인트 호출");
         List<ChatMessageDto> messages = chatService.getChatHistory(roomId);
         return new ResponseEntity<>(messages, HttpStatus.OK);
     }
@@ -50,6 +56,8 @@ public class ChatController {
 	//	 채팅 메세지 읽음 처리
 	@PostMapping("/room/{roomId}/read")
 	public ResponseEntity<?> messageRead(@PathVariable Long roomId){
+
+        log.info("/room/{roomId}/read 엔드포인트 호출");
 		chatService.messageRead(roomId);
 		return ResponseEntity.ok().build();
 	}
@@ -57,6 +65,8 @@ public class ChatController {
 	//	 내 채팅방 목록 조회 : roomId  , 보여줘야할 데이터 roomName, 그룹채팅 여부, 메세지 읽음 개수
 	@GetMapping("/my/rooms")
 	public ResponseEntity<?> getMyRooms(){
+
+        log.info("/my/rooms 엔드포인트 호출");
 		List<MyChatListResDto> myChatListResDtos = chatService.getMyChatRooms();
 		return new ResponseEntity<>(myChatListResDtos, HttpStatus.OK);
 	}
@@ -66,7 +76,20 @@ public class ChatController {
 	 */
 	@DeleteMapping("room/group/{roomId}/leave")
 	public ResponseEntity<?> leaveRoom(@PathVariable("roomId") Long roomId) {
+
+        log.info("room/group/{roomId}/leave 엔드포인트 호출");
 		chatService.leaveGroupChatRoom(roomId);
 		return ResponseEntity.ok().build();
 	}
+
+    /**
+     * 개인 채팅방 개설 또는 roomId return
+     * ?otherMemberId=
+     */
+    @PostMapping("/room/private/create")
+    public ResponseEntity<?> getOrCreatePrivateRoom(@RequestParam Long otherMemberId){
+
+        Long roomId = chatService.getOrCreatePrivateRoom(otherMemberId);
+        return new ResponseEntity<>(roomId, HttpStatus.OK);
+    }
 }
